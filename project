@@ -1,0 +1,78 @@
+const express = require("express")
+const users = require("./MOCK_DATA.json");
+const fs = require("fs")
+
+
+
+const app = express();
+const port = 8000;
+
+//plugin = middleware it takes data and converts into an object
+app.use(express.urlencoded({extended:false})) ///next function fo rthis will be app.use 2nd middle ware
+
+app.use((req,res,next)=>{
+console.log("hello from middelware");
+fs.appendFile("log.txt",`${Date.now()} : ${req.method} : ${req.path}\n`,(err,data)=>{
+  next()
+});
+
+});
+app.use((req,res,next)=>{
+  console.log("hey from middleware 3 wont be printed");
+  next();                                        /////MIDDLEWARE///
+  });
+app.get("/users",(req,res)=>{
+  const html = `
+  <ul>
+    ${users.map((user) => `<li>${user.first_name}</li>`).join("")}
+  </ul>
+  `;
+  return res.send(html)
+});
+
+
+
+app.get("/api/users",(req,res) => {
+  res.setHeader("myname","kavitha");
+
+    return res.json(users);
+});
+app.get("/api/users/:id", (req,res)=>{
+    const id = req.params.id;
+    const user = users.find((user)=>user.id==id)
+    if(!user) return res.status(404).json({error:"user not found"})
+    return res.json(user);
+ })
+ 
+
+app.route("/api/users/:id").get((req,res)=>{
+    const id = req.params.id;
+    const user = users.find((user)=>user.id==id)
+    return res.json(user);
+ })
+   .patch((req,res)=>{
+    //  edit the user with id
+    return res.json({status : "pending"})
+  })
+  .delete((req,res)=>{
+    //  delete the user with id
+    return res.json({status : "pending"})
+  })
+
+  app.post("/api/users",(req,res)=>{
+    //  create new user with id
+    const body = req.body;
+    console.log("Body",body);
+
+    users.push({...body,id:users.length+1 });
+    fs.writeFile("MOCK_DATA.json",JSON.stringify(users),(err,data)=>{
+      return res.json({status : "success",id:users.length})
+
+    })
+  })
+
+
+
+app.listen(port,()=>{
+    console.log("server started");
+})
